@@ -99,5 +99,5 @@ int initializeMBR(bpbFat32 *bpbcomm, int inFile);
 dirEnt initializeRootDir(bpbFat32 *bpbcomm, int inFile);
 int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile);
 int initFAT();
-dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int *count);
+dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count);
 void tokenizePath(const char *dirpath);

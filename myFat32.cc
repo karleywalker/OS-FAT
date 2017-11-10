@@ -13,12 +13,12 @@
 int main() {
 
 	initFAT();
-	//tokenizePath("/mnt/Media");
+	tokenizePath("/mnt/Media");
 } 
 
-/*void tokenizePath(const char *dirpath) {
-	//char *path = (char *)dirpath;
-	//printf("%s\n\n", path);
+void tokenizePath(const char *dirpath) {
+	char *path = (char *) malloc (strlen(dirpath+1)*sizeof(char *));
+	strcpy(path, dirpath);
         char *dir;
 	
 
@@ -27,23 +27,16 @@ int main() {
         while( dir != NULL ) {
 
                 dir = strtok( NULL, "/" );
-		int count;
-		dirEnt * dirs = getDirEs(rootDir, &bpbcomm, inFile, &count);
-
-		for(int i=0; i<count; i++) {
-			print_dirEnt(&dirs[i]);
-		}
-		free(dirs);
-		printf("Path: %s \t", dir);
+		printf("Path: %s \n", dir);
         }
-} */
+} 
 
 int initFAT() {
 
 	char *rawDisk = getenv("FAT16_FS_PATH");
 	
-	cout << "Hello FAT16\n";
-	cout << "Reading File: " << rawDisk << endl;
+	/*cout << "Hello FAT16\n";
+	cout << "Reading File: " << rawDisk << endl; */
 
 	int inFile;
 	inFile = open(rawDisk, O_RDWR);
@@ -57,14 +50,23 @@ int initFAT() {
 	dirEnt rootDir = initializeRootDir(&bpbcomm, inFile);	
 	print_dirEnt(&rootDir);
 
-	getDirEnts(rootDir, &bpbcomm, inFile);
-	/*int count;
-	dirEnt * dirs = getDirEs(rootDir, &bpbcomm, inFile, &count);
+	//getDirEnts(rootDir, &bpbcomm, inFile);
+	int count;
+	dirEnt * dirs = getDirEs(rootDir, &bpbcomm, inFile, bpbcomm.bpb_RootClus, &count);
 
 	for(int i=0; i<count; i++) {
 		print_dirEnt(&dirs[i]);
 	}
-	free(dirs); */
+
+	printf("SUBBBBBB\n");
+	print_dirEnt(&dirs[1]);
+	printf("SUBBBBBB\n");
+	dirEnt * subdirs = getDirEs(dirs[0], &bpbcomm, inFile, dirs[0].dir_fstClusLO, &count);
+	for(int i=0; i<count; i++) {
+		print_dirEnt(&subdirs[i]);
+	}
+	free(dirs); 
+	free(subdirs); 
 } 
 
 void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset){
@@ -102,7 +104,7 @@ int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile) {
 	while(dirInfo.dir_name[0] != 0 ) {
 		int next = i * sizeof(dirEnt);
 		safe_read(inFile, (uint8_t *)&dirInfo, sizeof(dirEnt), root_offset+next);
-		if((dirInfo.dir_fileSize != -1) && (dirInfo.dir_name[0] != 0))
+		if(dirInfo.dir_fileSize != -1))
 			print_dirEnt(&dirInfo);
 		if(dirInfo.dir_attr == 0x10) {
 
@@ -113,8 +115,6 @@ int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile) {
                 		print_dirEnt(&dirs[i]);
         		}
         		free(dirs);
-
-		}
 		if(dirInfo.dir_attr == 0x20) {
 			dirEnt myFile;
 
@@ -126,40 +126,14 @@ int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile) {
 		} 
 		i++;
 	}  */
-	dirEnt * dirs = (dirEnt *)malloc(100 * sizeof(dirEnt));
-	int i=0;
-	int first_data_sec = getFirstDataSec(bpbcomm, bpbcomm->bpb_RootClus);
-	int root_offset = first_data_sec * bpbcomm->bpb_bytesPerSec;
-	cout<<"Reading Directories in Root"<<endl;
-	int next = 32;
-	while(dirInfo.dir_name[0] != 0 ){
-		next += sizeof(dirEnt);
-		safe_read(inFile, (uint8_t *)&dirInfo, sizeof(dirEnt), root_offset+next);
-		if((dirInfo.dir_fileSize != -1) ){
-			if(dirInfo.dir_attr == 0x10) {
-
-				int count;
-        			dirEnt * dirs = getDirEs(dirInfo, bpbcomm, inFile, &count);
-
-        			for(int j=0; j<count; j++) {
-                			print_dirEnt(&dirs[j]);
-        			}
-        			free(dirs);
-			}
-			else 
-				print_dirEnt(&dirInfo);
-			i++;
-		}
-	} 
 }
 
-dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int *count) {
+dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count) {
 
 	dirEnt * dirs = (dirEnt *)malloc(100 * sizeof(dirEnt));
 	int i=0;
-	int first_data_sec = getFirstDataSec(bpbcomm, bpbcomm->bpb_RootClus);
+	int first_data_sec = getFirstDataSec(bpbcomm, cluster);
 	int root_offset = first_data_sec * bpbcomm->bpb_bytesPerSec;
-	cout<<"DIR-E\n"<<endl;
 	int next = 32;
 	while(dirInfo.dir_name[0] != 0 ){
 		next += sizeof(dirEnt);

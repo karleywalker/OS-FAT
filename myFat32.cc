@@ -19,15 +19,17 @@ dirEnt rootDir;
 dirEnt cwd;
 int inFile;
 char *cwdPath;
+int fdCount;
+dirEnt fdTable[128];
 
 int main() {
 
 	initFAT();
-	print_fat32(&bpbcomm);
-	print_dirEnt(&rootDir);
+	//print_fat32(&bpbcomm);
+	//print_dirEnt(&rootDir);
 	printf("Initialized\n");
 
-	dirEnt *dirs = OS_readDir("/PEOPLE/AG8T");
+	/*dirEnt *dirs = OS_readDir("/PEOPLE/AG8T/");
 
 	if(dirs != NULL) {
 		for(int i=0; i<100; i++) {
@@ -39,10 +41,19 @@ int main() {
 		printf("NULL\n");
 
 	printf("Before CD: %s\n", cwdPath);
-	int status = OS_cd("/PEOPLE");
-	print_dirEnt(&cwd);
+	int status = OS_cd("/PEOPLE/AG8T/");
+	if(status != -1)
+		print_dirEnt(&cwd);
 	printf("Status: %d\n", status);
 	printf("After CD: %s\n", cwdPath); 
+
+	*/
+	int fd = 0;
+	printf("FD: %d\n", fd);
+	fd = OS_open("/CONGRATSTXT");
+	printf("FD: %d\n", fd);
+	fd = OS_open("/PEOPLE/AG8T/GATE-C~1TXT");
+	printf("FD: %d\n", fd);
 	
 } 
 
@@ -72,6 +83,7 @@ int initFAT() {
 
 	//initialize cwd
 	cwdPath = (char *)"/";
+	fdCount = 0;	
 
 	//get MBR	
 	memset(&bpbcomm, 0, sizeof(bpbFat32));
@@ -81,22 +93,6 @@ int initFAT() {
 	memset(&rootDir, 0, sizeof(dirEnt));
 	rootDir = initializeRootDir(&bpbcomm, inFile);	
 
-	/*int count;
-	dirEnt * dirs = getDirEs(rootDir, &bpbcomm, inFile, bpbcomm.bpb_RootClus, &count);
-
-	for(int i=0; i<count; i++) {
-		print_dirEnt(&dirs[i]);
-	}
-
-	printf("SUBBBBBB\n");
-	print_dirEnt(&dirs[1]);
-	printf("SUBBBBBB\n");
-	dirEnt * subdirs = getDirEs(dirs[0], &bpbcomm, inFile, dirs[0].dir_fstClusLO, &count);
-	for(int i=0; i<count; i++) {
-		print_dirEnt(&subdirs[i]);
-	}
-	free(dirs); 
-	free(subdirs);  */
 } 
 
 void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset){
@@ -126,38 +122,6 @@ dirEnt initializeRootDir(bpbFat32 *bpbcomm, int inFile) {
 	return dirInfo;
 }
 
-int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile) {
-	/*int i=1;
-	int first_data_sec = getFirstDataSec(bpbcomm, bpbcomm->bpb_RootClus);
-	int root_offset = first_data_sec * bpbcomm->bpb_bytesPerSec;
-	cout<<"Reading Directories in Root"<<endl;
-	while(dirInfo.dir_name[0] != 0 ) {
-		int next = i * sizeof(dirEnt);
-		safe_read(inFile, (uint8_t *)&dirInfo, sizeof(dirEnt), root_offset+next);
-		if(dirInfo.dir_fileSize != -1))
-			print_dirEnt(&dirInfo);
-		if(dirInfo.dir_attr == 0x10) {
-
-			int count;
-        		dirEnt * dirs = getDirEs(dirInfo, &bpbcomm, inFile, &count);
-
-        		for(int i=0; i<count; i++) {
-                		print_dirEnt(&dirs[i]);
-        		}
-        		free(dirs);
-		if(dirInfo.dir_attr == 0x20) {
-			dirEnt myFile;
-
-			int first_sec_of_cluster = getFirstDataSec(bpbcomm, dirInfo.dir_fstClusLO);
-	
-			uint8_t buf[dirInfo.dir_fileSize];
-			safe_read(inFile, (uint8_t *)&buf, dirInfo.dir_fileSize, first_sec_of_cluster*bpbcomm->bpb_bytesPerSec);
-			printf("%s\n",buf);
-		} 
-		i++;
-	}  */
-}
-
 dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count) {
 
 	dirEnt * dirs = NULL;
@@ -171,9 +135,10 @@ dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, in
 		if((dirInfo.dir_fileSize != -1) && (dirInfo.dir_fstClusLO != 0)) {
 			dirs = (dirEnt *)realloc_or_free(dirs, sizeof *dirs * next);
 			dirs[i] = dirInfo;
+			print_dirEnt(&dirInfo);
 			i++;
 		}
-	} 
+	}
 	*count = i-1;
 	return dirs;
 }
@@ -186,8 +151,18 @@ static void *realloc_or_free(void *ptr, size_t size) {
   return tmp;
 }
 
+int getFileDesc(dirEnt *fileEnt){
+
+	printf("Incrementing fd from %d to %d\n", fdCount, fdCount+1);
+	fdCount = fdCount + 1;
+	fdTable[fdCount] = *fileEnt;
+	return fdCount;
+
+}
+
 
 dirEnt * OS_readDir(const char *dirpath) {
+
 	dirEnt *dirs = NULL;
 
 	lookUp(dirpath, READDIR, 0, &dirs); 
@@ -212,11 +187,24 @@ int OS_cd(const char *dirpath){
                 return -1;
 }
 
+int OS_open(const char *path) {
+
+	dirEnt *dirs = NULL;
+	int status = 0;
+
+	lookUp(path, OPEN, &status, &dirs);
+
+        if(status == 1)
+                return 1;
+
+}
+
 void lookUp(const char *dirpath, int opType, int *status, dirEnt **entries) {
 
    	char *path_tokens[1000];
         int depth = 0;
 	int cluster = 0;
+	int fd = -1;
         char *path;
 	bool found = false;
 	dirEnt lookupDir = rootDir;
@@ -236,37 +224,68 @@ void lookUp(const char *dirpath, int opType, int *status, dirEnt **entries) {
         strcpy(path, dirpath);
         tokenize(path, path_tokens, &depth);
 
+	printf("Depth = %d\n", depth);
+
         for(int i=0; i<depth; i++) {
-                //printf("Lookup Dir: %s\n", path_tokens[i]);
+                printf("Lookup Dir: %s\n", path_tokens[i]);
 		int count = 0;
-		dirs = getDirEs(lookupDir, &bpbcomm, inFile, cluster, &count);
 		found = false;
+
+		dirs = getDirEs(lookupDir, &bpbcomm, inFile, cluster, &count);
+
+		if(OPEN && count==0 ) {
+			count = 1;
+		} else if(count == 0){
+			break;
+		}
 
 		for(int j=0; j<count; j++) {
 			//printf("Looking for %s %d in %s\n", path_tokens[i], (int)strlen(path_tokens[i]), dirs[j].dir_name);
 			if(strncmp(path_tokens[i], (char *)dirs[j].dir_name, strlen(path_tokens[i])) == 0){
 
-				printf("MATCH Found: %s\n", path_tokens[i]);
+				//printf("MATCH Found: %s\n", path_tokens[i]);
 				lookupDir = dirs[j];
 				cluster = dirs[j].dir_fstClusLO;
-				if((i==depth-1) && dirs[j].dir_attr != 0x10) {
-					if(opType == CD)
-						*status = -1;
-					return;
-				} else {
-					if(opType == READDIR) {
+
+				if(opType == READDIR) {
+
+					if((i==depth-1) && dirs[j].dir_attr != 0x10) { //reached end, no directory found
+						*entries = NULL;
+						return;
+					} else {
+						found = true;
 						dirs = getDirEs(lookupDir, &bpbcomm, inFile, cluster, &count);
-					} else if(opType == CD) {
-						cwd = lookupDir;
+						break;
 					}
-					found = true;
-					break;
-				}
-			} else {
+				} else if(opType == CD) {
+					if((i==depth-1) && dirs[j].dir_attr != 0x10) { //reached end, no directory found
+						*status = -1;
+						return;
+					} else {
+						cwd = lookupDir;
+						found = true;
+						break;
+					}
+				} else if(opType == OPEN) {
+						printf("File found: %s %d\n", lookupDir.dir_name, fdCount);
+					if((i==depth-1) && dirs[j].dir_attr != 0x20) { //reached end, no file found
+						*status = -1;
+						return;
+					} else if ((i==depth-1) && dirs[j].dir_attr == 0x20){
+						//printf("File found: %s %d\n", lookupDir.dir_name, fdCount);
+						fd = getFileDesc(&lookupDir);
+						found = true;
+						break;
+					} else {
+						found = false;
+						continue;
+					}
+				} 
+			} else { // directory name compare didnt match
 				found = false;
-			}
-		}
-	} //end of for
+			} //end of else 
+		} //end of inner for
+	} //end of outer for 
 	if(found) {
 		if(opType == CD) {
 			cwdPath = (char *)dirpath;
@@ -274,87 +293,24 @@ void lookUp(const char *dirpath, int opType, int *status, dirEnt **entries) {
 			*status = 1;
 		} else if(opType == READDIR) {
 			*entries = dirs;
+		} else if(opType == OPEN) {
+			*status = fd;
 		}
-	}
-	else {
+	} else {
 		if(opType == CD) {
 			cwd = prevCwd;
-			strcpy(cwdPath,prevPath);
+			cwdPath = prevPath;
 			free(dirs);
 			*status = -1;
 		} else if(opType == READDIR) {
 			entries = NULL;
+		} else if(opType == OPEN) {
+			*status = fd;
 		}
 	}
 }
 
-/*int OS_cd(const char *dirpath){
 
-   	char *path_tokens[1000];
-        int depth = 0;
-        int cluster = 0;
-        char *path;
-        bool found = false;
-        dirEnt lookupDir = rootDir;
-        dirEnt *dirs = NULL;
-	int i, j;
-
-	//save old paths
-	dirEnt prevCwd = cwd;
-	char *prevPath = cwdPath;
-
-        path = (char *) malloc (strlen(dirpath+1)*sizeof(char *));
-        cluster = bpbcomm.bpb_RootClus;
-
-        strcpy(path, dirpath);
-        tokenize(path, path_tokens, &depth);
-
-
-        for(i=0; i<depth; i++) {
-                //printf("Lookup Dir: %s\n", path_tokens[i]);
-                int count = 0;
-                dirs = getDirEs(lookupDir, &bpbcomm, inFile, cluster, &count);
-                found = false;
-
-                for(j=0; j<count; j++) {
-                        //printf("Looking for %s %d in %s\n", path_tokens[i], (int)strlen(path_tokens[i]), dirs[j].dir_name);
-                        if(strncmp(path_tokens[i], (char *)dirs[j].dir_name, strlen(path_tokens[i])) == 0){
-
-                                //printf("MATCH Found: %s\n", path_tokens[i]);
-                                lookupDir = dirs[j];
-                                cluster = dirs[j].dir_fstClusLO;
-                                if((i==depth-1) && dirs[j].dir_attr != 0x10) {
-                                        return -1;
-                                } else {
-                                        //dirs = getDirEs(lookupDir, &bpbcomm, inFile, cluster, &count);
-					cwd = lookupDir;
-                                        found = true;
-                                        break;
-                                }
-                        } else {
-                                found = false;
-                        }
-                }
-	} //end for
-	if(found) {
-		cwdPath = (char *)dirpath;
-		free(dirs);
-		return 1;
-	}
-	else {
-		cwd = prevCwd;
-		strcpy(cwdPath,prevPath);
-		free(dirs);
-		return -1;
-	}
-} */
-
-int OS_open(const char *path) {
-
-	
-
-
-}
 /*int OS_close(int fd);
 int OS_read(int fildes, void *buf, int nbyte, int offset); */
 

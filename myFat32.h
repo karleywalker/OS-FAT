@@ -106,6 +106,8 @@ int getFirstDataSec(bpbFat32 *bpbfat32, int N);
 int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile);
 dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count);
 void lookUp(const char *dirpath, int opType, int *status, dirEnt **dirs);
+int getFileDesc(dirEnt *fileEnt);
+
 
 //Library Functions to support FAT read-only
 int OS_cd(const char *path);

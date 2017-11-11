@@ -1,5 +1,5 @@
 /* myFat32.cc
-* Program implements FAT16 filesystem to support read/writing to FS.
+* Program implements FAT32 filesystem to support read/writing to FS.
 * 
 *
 *

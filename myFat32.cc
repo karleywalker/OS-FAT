@@ -10,48 +10,61 @@
 #include <cstring>
 #include "myFat32.h"
 
+bpbFat32 bpbcomm;
+dirEnt rootDir;
+int inFile;
+
 int main() {
 
 	initFAT();
-	tokenizePath("/mnt/Media");
+	print_fat32(&bpbcomm);
+	print_dirEnt(&rootDir);
+	printf("Initialized\n");
+
+	dirEnt *dirs = OS_readDir("/PEOPLE/AG8T");
+
+	if(dirs != NULL) {
+		for(int i=0; i<100; i++) {
+			if(dirs[i].dir_attr == 0)
+				break;
+			print_dirEnt(&dirs[i]);
+		}
+	}
 } 
 
-void tokenizePath(const char *dirpath) {
-	char *path = (char *) malloc (strlen(dirpath+1)*sizeof(char *));
-	strcpy(path, dirpath);
-        char *dir;
-	
 
-        dir = strtok(path, "/");
-	printf("%s\n\n", dir);
-        while( dir != NULL ) {
+void tokenize(char *string, char *path[], int *depth) {
+        char *token;
 
-                dir = strtok( NULL, "/" );
-		printf("Path: %s \n", dir);
+        /* Establish string and get the first token: */
+        token = strtok(string, "/");
+        path[0] = token;
+        int count = 1;
+        while( token != NULL ) {
+                token = strtok( NULL, "/");
+                path[count++] = token;
         }
-} 
+        (*depth) = count-1;
+        path[count] = NULL;
+}
 
 int initFAT() {
 
+	//get env for FAT dir
 	char *rawDisk = getenv("FAT16_FS_PATH");
-	
-	/*cout << "Hello FAT16\n";
-	cout << "Reading File: " << rawDisk << endl; */
 
-	int inFile;
+	//open FAT disk file	
 	inFile = open(rawDisk, O_RDWR);
 
-	bpbFat32 bpbcomm;
+	//get MBR	
 	memset(&bpbcomm, 0, sizeof(bpbFat32));
 	safe_read(inFile, (uint8_t *)&bpbcomm, sizeof(bpbFat32), 0x00);
-	print_fat32(&bpbcomm);
+	
+	//get root directory info
+	memset(&rootDir, 0, sizeof(dirEnt));
+	rootDir = initializeRootDir(&bpbcomm, inFile);	
 
-
-	dirEnt rootDir = initializeRootDir(&bpbcomm, inFile);	
-	print_dirEnt(&rootDir);
-
-	//getDirEnts(rootDir, &bpbcomm, inFile);
-	int count;
+	/*int count;
 	dirEnt * dirs = getDirEs(rootDir, &bpbcomm, inFile, bpbcomm.bpb_RootClus, &count);
 
 	for(int i=0; i<count; i++) {
@@ -66,7 +79,7 @@ int initFAT() {
 		print_dirEnt(&subdirs[i]);
 	}
 	free(dirs); 
-	free(subdirs); 
+	free(subdirs);  */
 } 
 
 void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset){
@@ -130,7 +143,7 @@ int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile) {
 
 dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count) {
 
-	dirEnt * dirs = (dirEnt *)malloc(100 * sizeof(dirEnt));
+	dirEnt * dirs = NULL;
 	int i=0;
 	int first_data_sec = getFirstDataSec(bpbcomm, cluster);
 	int root_offset = first_data_sec * bpbcomm->bpb_bytesPerSec;
@@ -138,16 +151,76 @@ dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, in
 	while(dirInfo.dir_name[0] != 0 ){
 		next += sizeof(dirEnt);
 		safe_read(inFile, (uint8_t *)&dirInfo, sizeof(dirEnt), root_offset+next);
-		if((dirInfo.dir_fileSize != -1) ){
+		if((dirInfo.dir_fileSize != -1) && (dirInfo.dir_fstClusLO != 0)) {
+			dirs = (dirEnt *)realloc_or_free(dirs, sizeof *dirs * next);
 			dirs[i] = dirInfo;
 			i++;
 		}
 	} 
 	*count = i-1;
 	return dirs;
+}
+
+static void *realloc_or_free(void *ptr, size_t size) {
+  void *tmp = realloc(ptr, size);
+  if (tmp == NULL) {
+    free(ptr);
+  }
+  return tmp;
+}
+
+dirEnt * OS_readDir(const char *dirpath) {
+
+   	char *path_tokens[1000];
+        int depth = 0;
+	int cluster = 0;
+        char *path;
+	bool found = false;
+	dirEnt lookupDir = rootDir;
+	dirEnt *dirs = NULL;
+
+	path = (char *) malloc (strlen(dirpath+1)*sizeof(char *));
+	cluster = bpbcomm.bpb_RootClus;
+
+        strcpy(path, dirpath);
+        tokenize(path, path_tokens, &depth);
+
+        for(int i=0; i<depth; i++) {
+                //printf("Lookup Dir: %s\n", path_tokens[i]);
+		int count = 0;
+		dirs = getDirEs(lookupDir, &bpbcomm, inFile, cluster, &count);
+		found = false;
+
+		for(int j=0; j<count; j++) {
+			//printf("Looking for %s %d in %s\n", path_tokens[i], (int)strlen(path_tokens[i]), dirs[j].dir_name);
+			if(strncmp(path_tokens[i], (char *)dirs[j].dir_name, strlen(path_tokens[i])) == 0){
+
+				//printf("MATCH Found: %s\n", path_tokens[i]);
+				lookupDir = dirs[j];
+				cluster = dirs[j].dir_fstClusLO;
+				if((i==depth-1) && dirs[j].dir_attr != 0x10) {
+					return NULL;
+				} else {
+					dirs = getDirEs(lookupDir, &bpbcomm, inFile, cluster, &count);
+					found = true;
+					break;
+				}
+			} else {
+				found = false;
+			}
+		}
+	} //end of for
+	if(found) 
+		return dirs;
+	else 
+		return NULL;
 
 }
 
+/*int OS_cd(const char *path);
+int OS_open(const char *path);
+int OS_close(int fd);
+int OS_read(int fildes, void *buf, int nbyte, int offset); */
 
 int print_fat32(bpbFat32 *bpbInfo) {
 	cout<< "\n--------BPB--------" << endl;

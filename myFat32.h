@@ -88,16 +88,37 @@ typedef struct __attribute__ ((packed)) {
         uint32_t dir_fileSize;          // 32-bit DWORD hoding this file's size in bytes
 } dirEnt;
 
-void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset);
+//Helper functions to print
 int print_fat32(bpbFat32 *bpbfat32);
 int print_fat16(bpbFat16 *bpbfat16);
 int print_dirEnt(dirEnt *dirInfo);
 
-int getFirstDataSec(bpbFat32 *bpbfat32, int N);
+//Helper functions
+void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset);
+void tokenize(char *string, char *path[], int *depth);
+static void *realloc_or_free(void *ptr, size_t size);
 
+//FAT related helper functions
+int initFAT();
 int initializeMBR(bpbFat32 *bpbcomm, int inFile);
 dirEnt initializeRootDir(bpbFat32 *bpbcomm, int inFile);
+int getFirstDataSec(bpbFat32 *bpbfat32, int N);
 int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile);
-int initFAT();
 dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count);
-void tokenizePath(const char *dirpath);
+
+//Library Functions to support FAT read-only
+int OS_cd(const char *path);
+int OS_open(const char *path);
+int OS_close(int fd);
+int OS_read(int fildes, void *buf, int nbyte, int offset);
+dirEnt * OS_readDir(const char *dirname);
+
+//Library Functions to support FAT read-write
+int OS_mkdir(const char *path);
+int OS_rmdir(const char *path);
+int OS_creat(const char *path);
+int OS_write(int fildes, const void *buf,int nbytes);
+int OS_writeDir(const char *path, dirEnt *entries, int entryCount);
+
+
+

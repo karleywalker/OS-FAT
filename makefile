@@ -1,6 +1,13 @@
-default:  
-	g++ myFat32.cc -o fat
-lib:  
-	g++ -shared -o libFAT32.so -fPIC myFat32.cc
+CC = g++
+CFLAGS  = -fPIC -g 
+LDFLAGS = -shared
+
+TARGET  = libFAT32.so
+
+all: $(TARGET)
+
 clean:
-	rm fat
+	rm -f $(TARGET)
+
+$(TARGET): 
+	$(CC) $(CFLAGS) $(LDFLAGS) myFat32.cc -o $(TARGET)

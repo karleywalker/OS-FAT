@@ -26,129 +26,7 @@ char *cwdPath;
 int fdCount;
 dirEnt fdTable[129];
 
-int main() {
-
-        initFAT();
-        //print_fat32(&bpbcomm);
-        //print_dirEnt(&rootDir);
-        printf("Initialized\n");
-
-        /*
-        printf("\n--------------TEST1 READDIR----------------\n");
-        dirEnt *dirs = OS_readDir("/");
-        if(dirs != NULL) {
-                for(int i=0; i<100; i++) {
-                        if(dirs[i].dir_attr == 0)
-                                break;
-                        print_dirEnt(&dirs[i]);
-                }
-        } else
-                printf("NULL\n");
-
-        printf("\n--------------TEST2 READDIR----------------\n");
-        dirEnt *dirs = OS_readDir("/PEOPLE");
-        if(dirs != NULL) {
-                for(int i=0; i<100; i++) {
-                        if(dirs[i].dir_attr == 0)
-                                break;
-                        print_dirEnt(&dirs[i]);
-                }
-        } else
-                printf("NULL\n");
-
-        printf("\n--------------TEST3 READDIR----------------\n");
-        dirEnt *dirs = OS_readDir("/PEOPLE/AG8T/");
-
-        if(dirs != NULL) {
-                for(int i=0; i<100; i++) {
-                        if(dirs[i].dir_attr == 0)
-                                break;
-                        print_dirEnt(&dirs[i]);
-                }
-        } else
-                printf("NULL\n");
-        */
-
-        /*
-        printf("\n--------------TEST1 CD----------------\n");
-        printf("Before CD: %s\n", cwdPath);
-        int status = OS_cd("/");
-        printf("Status: %d\n", status);
-        printf("After CD: %s\n", cwdPath); 
-
-        printf("\n--------------TEST2 CD----------------\n");
-        printf("Before CD: %s\n", cwdPath);
-        status = OS_cd("/CONGRATSTXT");
-        printf("Status: %d\n", status);
-        printf("After CD: %s\n", cwdPath); 
-
-        printf("\n--------------TEST3 CD----------------\n");
-        printf("Before CD: %s\n", cwdPath);
-        status = OS_cd("/PEOPLE/AG8T/");
-        if(status != -1)
-                print_dirEnt(&cwd);
-        printf("Status: %d\n", status);
-        printf("After CD: %s\n", cwdPath); 
-
-        printf("\n--------------TEST4 CD----------------\n");
-        printf("Before CD: %s\n", cwdPath);
-        status = OS_cd("/PEOPLE/AG8T/GATE-C~1TXT");
-        printf("Status: %d\n", status);
-        printf("After CD: %s\n", cwdPath); 
-
-        */
-        /*
-        printf("\n--------------TEST1 OPEN----------------\n");
-        int fd = 0;
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
-        fd = OS_open("/CONGRATSTXT");
-        print_dirEnt(&fdTable[fd]);
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
-
-        printf("\n--------------TEST1 CLOSE----------------\n");
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
-        OS_close(fd);
-        print_dirEnt(&fdTable[fd]);
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
-        */
-
-        printf("\n--------------TEST2 OPEN----------------\n");
-        int fd = 0;
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
-        //fd = OS_open("/PEOPLE/AG8T/GATE-C~1TXT");
-        fd = OS_open("/CONGRATSTXT");
-        print_dirEnt(&fdTable[fd]);
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
-
-/*
-        printf("\n--------------TEST2 CLOSE----------------\n");
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
-        OS_close(fd);
-        print_dirEnt(&fdTable[fd]);
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
-*/
-        printf("\n--------------TEST1 READFILE----------------\n");
-        char *buf = NULL;
-        int bytes = OS_read(fd, buf, 10, 2);
-        printf("Bytes Read = %d\n", bytes);
-
-/*
-
-        printf("\n--------------TEST3 OPEN----------------\n");
-        fd = 0;
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
-        fd = OS_open("/PEOPLE/AG8T");
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
-
-        printf("\n--------------TEST4 OPEN----------------\n");
-        fd = 0;
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
-        fd = OS_open("/PEOPLE/AG8T/sample.txt");
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
-*/
-
-} 
-
+int init = 0;
 
 void tokenize(char *string, char *path[], int *depth) {
         char *token;
@@ -184,6 +62,10 @@ int initFAT() {
         //get root directory info
         memset(&rootDir, 0, sizeof(dirEnt));
         rootDir = initializeRootDir(&bpbcomm, inFile);
+
+	init = 1;
+
+	return SUCCESS;
 
 } 
 
@@ -255,6 +137,10 @@ int getFileDesc(dirEnt *fileEnt){
 
 dirEnt * OS_readDir(const char *dirpath) {
 
+	if(init == 0) {
+		initFAT();
+	}
+
         dirEnt *dirs = NULL;
 
         lookUp(dirpath, READDIR, 0, &dirs); 
@@ -268,6 +154,10 @@ dirEnt * OS_readDir(const char *dirpath) {
 }
 
 int OS_cd(const char *dirpath){
+
+	if(init == 0) {
+		initFAT();
+	}
 
         dirEnt *dirs = NULL;
         int status = 0;
@@ -287,6 +177,10 @@ int OS_cd(const char *dirpath){
 
 int OS_open(const char *path) {
 
+	if(init == 0) {
+		initFAT();
+	}
+
         dirEnt *dirs = NULL;
         int status = 0;
 
@@ -301,6 +195,10 @@ int OS_open(const char *path) {
 }
 
 int OS_close(int fd) {
+
+	if(init == 0) {
+		initFAT();
+	}
 
         if( fd>0 ) {
                 fdTable[fd] = {{ 0 }};
@@ -323,6 +221,9 @@ int OS_close(int fd) {
 */
 int OS_read(int fd, void *buf, int nbytes, int offset){
 
+	if(init == 0) {
+		initFAT();
+	}
 
         if(fd > 0) {
                 dirEnt fileInfo = fdTable[fd];
@@ -330,7 +231,7 @@ int OS_read(int fd, void *buf, int nbytes, int offset){
                         print_dirEnt(&fileInfo);
                         int first_sec_of_cluster = getFirstDataSec(&bpbcomm, fileInfo.dir_fstClusLO);
  
-                        uint8_t buf[nbytes+1];
+                        uint8_t buf[nbytes];
                         safe_read(inFile, (uint8_t *)&buf, nbytes, first_sec_of_cluster*bpbcomm.bpb_bytesPerSec+offset);
                         printf("%s", buf);
                         return nbytes;

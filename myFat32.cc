@@ -1,33 +1,36 @@
 /* myFat32.cc
-* Program implements FAT32 filesystem to support read/writing to FS.
-* 
-*
+* Program implements FAT16/FAT32 filesystem to support read-only operations on FS.
+* Program reads a raw FAT16/FAT32 file and depending on function call, performs 
+* operations on the FS.
 *
 * Author: Vanamala Venkataswamy
 * Date: 11-03-2017
+* Last Modified Date: 11-15-2017
 */
 
 #include <cstring>
-#include "myFat32.h"
+#include "myFat32.h"	
 
-#define SUCCESS 1
-#define FAILURE -1
+#define SUCCESS 1	// Flag to indicate success
+#define FAILURE -1	// Flag to indicate failure
 
-#define READDIR 1
-#define CD 2
-#define OPENFILE 3
-#define READFILE 4
+#define READDIR 1	// Flag to indicate readDir operation type
+#define CD 2		// Flag to indicate cd operation type
+#define OPENFILE 3	// Flag to indicate file open operation type
+#define READFILE 4	// Flag to indicate file read operation type
 
-bpbFat32 bpbcomm;
-dirEnt rootDir;
-dirEnt cwd;
-int inFile;
-char *cwdPath;
-int fdCount;
-dirEnt fdTable[129];
+bpbFat32 bpbcomm;	// global structure to store MBR
+dirEnt rootDir;		// globar structure to store rootDir entry
+dirEnt cwd;		// current working directory
+int inFile;		// file desriptor to point to raw disk
+char *cwdPath;		// current working dir name
+int fdCount;		// no.of open file descriptor count
+dirEnt fdTable[129];	// array to store directory entries of open files
 
-int init = 0;
+int init = 0;		// global variable to indicate if FAT initialization was done or not, 1 indicates initialized
 
+
+// function to tokenize path based on / as delimiter
 void tokenize(char *string, char *path[], int *depth) {
         char *token;
 
@@ -43,6 +46,7 @@ void tokenize(char *string, char *path[], int *depth) {
         path[count] = NULL;
 }
 
+// function to initilaize FAT, read MBR and Root Directory entries
 int initFAT() {
 
         //get env for FAT dir
@@ -69,6 +73,7 @@ int initFAT() {
 
 } 
 
+// general read function to seek to a offset and read data into buffer
 void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset){
         lseek(descriptor, offset, SEEK_SET);
         int remaining = size;
@@ -81,6 +86,7 @@ void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset){
         } while (remaining > 0);
 }
 
+// function to get fist data sector given cluster number
 int getFirstDataSec(bpbFat32 *bpbcomm, int N) {
         int root_sec = (( bpbcomm->bpb_rootEntCnt * 32 ) + (bpbcomm->bpb_bytesPerSec -1 )) / bpbcomm->bpb_bytesPerSec;
         int first_data_sec = bpbcomm->bpb_rsvdSecCnt + ( bpbcomm->bpb_numFATs * bpbcomm->bpb_FATSz32 ) + root_sec;
@@ -88,6 +94,7 @@ int getFirstDataSec(bpbFat32 *bpbcomm, int N) {
         return first_sec_of_cluster;
 }
 
+// function to initialize root directory struture
 dirEnt initializeRootDir(bpbFat32 *bpbcomm, int inFile) {
         dirEnt dirInfo;
         memset(&dirInfo, 0, sizeof(dirEnt));
@@ -96,6 +103,7 @@ dirEnt initializeRootDir(bpbFat32 *bpbcomm, int inFile) {
         return dirInfo;
 }
 
+// function to read directory entries of given path
 dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count) {
 
         dirEnt * dirs = NULL;
@@ -117,6 +125,7 @@ dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, in
         return dirs;
 }
 
+// reallocation function
 static void *realloc_or_free(void *ptr, size_t size) {
   void *tmp = realloc(ptr, size);
   if (tmp == NULL) {
@@ -125,16 +134,16 @@ static void *realloc_or_free(void *ptr, size_t size) {
   return tmp;
 }
 
+// get file discrptor when file, does not handle if entry already exists
 int getFileDesc(dirEnt *fileEnt){
 
         printf("Incrementing fd from %d to %d\n", fdCount, fdCount+1);
         fdCount = fdCount + 1;
         fdTable[fdCount] = *fileEnt;
         return fdCount;
-
 }
 
-
+// read directory entries for given path
 dirEnt * OS_readDir(const char *dirpath) {
 
 	if(init == 0) {
@@ -153,6 +162,7 @@ dirEnt * OS_readDir(const char *dirpath) {
         }
 }
 
+// change directory from current to new directory
 int OS_cd(const char *dirpath){
 
 	if(init == 0) {
@@ -175,6 +185,7 @@ int OS_cd(const char *dirpath){
         }
 }
 
+// open a file
 int OS_open(const char *path) {
 
 	if(init == 0) {
@@ -194,6 +205,7 @@ int OS_open(const char *path) {
         }
 }
 
+// close a file
 int OS_close(int fd) {
 
 	if(init == 0) {
@@ -246,6 +258,7 @@ int OS_read(int fd, void *buf, int nbytes, int offset){
 
 }
 
+// generic lookup function for various operation types
 void lookUp(const char *dirpath, int opType, int *status, dirEnt **entries) {
 
         char *path_tokens[1000];
@@ -368,8 +381,7 @@ void lookUp(const char *dirpath, int opType, int *status, dirEnt **entries) {
         }
 }
 
-
-
+// function to print MBR
 int print_fat32(bpbFat32 *bpbInfo) {
         cout<< "\n--------BPB--------" << endl;
         printf("bs_jmpBoot:\t\t%04x\n",bpbInfo->bs_jmpBoot[0]);
@@ -403,7 +415,7 @@ int print_fat32(bpbFat32 *bpbInfo) {
         cout<< "--------END-FAT32--------" << endl;
 }
 
-
+// function to print dirEnt
 int print_dirEnt(dirEnt *dirInfo) {
         cout<< "\n--------DIR_ENT--------" << endl;
         printf("dir_name:\t\t%s %d\n",dirInfo->dir_name, dirInfo->dir_name[0]);

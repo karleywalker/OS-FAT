@@ -46,11 +46,34 @@ void tokenize(char *string, char *path[], int *depth) {
         path[count] = NULL;
 }
 
+// general read function to seek to a offset and read data into buffer
+void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset){
+        lseek(descriptor, offset, SEEK_SET);
+        int remaining = size;
+        int read_size;
+        uint8_t *pos = buffer;
+        do {
+                read_size = read(descriptor, pos, remaining);
+                pos += read_size;
+                remaining -= read_size;
+        } while (remaining > 0);
+}
+
+
+// function to initialize root directory struture
+dirEnt initializeRootDir(bpbFat32 *bpbcomm, int inFile) {
+        dirEnt dirInfo;
+        memset(&dirInfo, 0, sizeof(dirEnt));
+        int first_data_sec = getFirstDataSec(bpbcomm, bpbcomm->bpb_RootClus);
+        safe_read(inFile, (uint8_t *)&dirInfo, sizeof(dirEnt), first_data_sec*bpbcomm->bpb_bytesPerSec);
+        return dirInfo;
+}
+
 // function to initilaize FAT, read MBR and Root Directory entries
 int initFAT() {
 
         //get env for FAT dir
-        char *rawDisk = getenv("FAT16_FS_PATH");
+        char *rawDisk = getenv("FAT_FS_PATH");
 
         //open FAT disk file
         inFile = open(rawDisk, O_RDWR);
@@ -73,34 +96,12 @@ int initFAT() {
 
 } 
 
-// general read function to seek to a offset and read data into buffer
-void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset){
-        lseek(descriptor, offset, SEEK_SET);
-        int remaining = size;
-        int read_size;
-        uint8_t *pos = buffer;
-        do {
-                read_size = read(descriptor, pos, remaining);
-                pos += read_size;
-                remaining -= read_size;
-        } while (remaining > 0);
-}
-
 // function to get fist data sector given cluster number
 int getFirstDataSec(bpbFat32 *bpbcomm, int N) {
         int root_sec = (( bpbcomm->bpb_rootEntCnt * 32 ) + (bpbcomm->bpb_bytesPerSec -1 )) / bpbcomm->bpb_bytesPerSec;
         int first_data_sec = bpbcomm->bpb_rsvdSecCnt + ( bpbcomm->bpb_numFATs * bpbcomm->bpb_FATSz32 ) + root_sec;
         int first_sec_of_cluster = (( N - 2) * bpbcomm->bpb_secPerClus ) + first_data_sec ;
         return first_sec_of_cluster;
-}
-
-// function to initialize root directory struture
-dirEnt initializeRootDir(bpbFat32 *bpbcomm, int inFile) {
-        dirEnt dirInfo;
-        memset(&dirInfo, 0, sizeof(dirEnt));
-        int first_data_sec = getFirstDataSec(bpbcomm, bpbcomm->bpb_RootClus);
-        safe_read(inFile, (uint8_t *)&dirInfo, sizeof(dirEnt), first_data_sec*bpbcomm->bpb_bytesPerSec);
-        return dirInfo;
 }
 
 // function to read directory entries of given path

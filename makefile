@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS  = -fPIC -g 
+CFLAGS  = -fPIC -g -std=c++11
 LDFLAGS = -shared
 
 TARGET  = libFAT32.so

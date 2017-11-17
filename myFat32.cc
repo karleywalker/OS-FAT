@@ -189,6 +189,12 @@ int initFAT() {
         //get env for FAT dir
         char *rawDisk = getenv("FAT_FS_PATH");
 
+	if(rawDisk == NULL) {
+		printf("Please export FAT_FS_PATH env\n");
+		init = 0; 
+		return 0;
+	} 
+
         //open FAT disk file
         inFile = open(rawDisk, O_RDWR);
 
@@ -262,7 +268,11 @@ int get_fileDesc(dirEnt *fileEnt){
 dirEnt * OS_readDir(const char *dirpath) {
 
 	if(init == 0) {
-		initFAT();
+		int ret = initFAT();
+		if(ret != SUCCESS) {
+			printf("FAT initialization Failed.. exiting\n");
+			return NULL;
+		}
 	}
 
         dirEnt *dirs = NULL;
@@ -281,7 +291,11 @@ dirEnt * OS_readDir(const char *dirpath) {
 int OS_cd(const char *dirpath){
 
 	if(init == 0) {
-		initFAT();
+		int ret = initFAT();
+                if(ret != SUCCESS) {
+                        printf("FAT initialization Failed.. exiting\n");
+			return FAILURE;
+		}
 	}
 
         dirEnt *dirs = NULL;
@@ -304,7 +318,11 @@ int OS_cd(const char *dirpath){
 int OS_open(const char *path) {
 
 	if(init == 0) {
-		initFAT();
+		int ret = initFAT();
+		if(ret != SUCCESS) {
+			printf("FAT initialization Failed.. exiting\n");
+                	return FAILURE;
+		}
 	}
 
         dirEnt *dirs = NULL;
@@ -324,7 +342,11 @@ int OS_open(const char *path) {
 int OS_close(int fd) {
 
 	if(init == 0) {
-		initFAT();
+		int ret = initFAT();
+		if(ret != SUCCESS) {
+			printf("FAT initialization Failed.. exiting\n");
+                	return FAILURE;
+		}
 	}
 
         if( fd>0 ) {
@@ -349,7 +371,11 @@ int OS_close(int fd) {
 int OS_read(int fd, void *readbuf, int nbytes, int offset){
 
 	if(init == 0) {
-		initFAT();
+		int ret = initFAT();
+                if(ret != SUCCESS) {
+                        printf("FAT initialization Failed.. exiting\n");
+                	return FAILURE;
+		}
 	}
 
         if(fd > 0) {

@@ -27,13 +27,14 @@ int main() {
 	int i;
 	if(dirs != NULL) {
                 for(i=0; i<100; i++) {
-                        if(dirs[i].dir_attr == 0)
+                        if(dirs[i].dir_attr == 0) {
+				printf("TOTAL: %d\n", i);
                                 break;
+			}
                         print_dirEnt(&dirs[i]);
                 }
         } else
                 printf("NULL\n");
-	printf("TOTAL: %d\n", i);
 
         printf("\n--------------TEST3 READDIR----------------\n");
         dirs = OS_readDir("/PEOPLE/AG8T/");

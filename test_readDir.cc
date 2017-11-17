@@ -35,7 +35,7 @@ int main() {
                 printf("NULL\n");
 	printf("TOTAL: %d\n", i);
 
-        /*printf("\n--------------TEST3 READDIR----------------\n");
+        printf("\n--------------TEST3 READDIR----------------\n");
         dirs = OS_readDir("/PEOPLE/AG8T/");
         if(dirs != NULL) {
                 for(int i=0; i<100; i++) {
@@ -45,7 +45,6 @@ int main() {
                 }
         } else
                 printf("NULL\n");
-	*/
 
 	free(dirs);
 } 

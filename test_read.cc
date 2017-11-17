@@ -19,7 +19,6 @@ int main() {
         char *buf = (char *)malloc(numbytes*sizeof(char));
         int bytes = OS_read(fd, buf, numbytes, 0);
 	printf("\n%s\n",buf);
-	free(buf);
         OS_close(fd);
 
 
@@ -29,7 +28,6 @@ int main() {
         buf = (char *)malloc(numbytes*sizeof(char));
         bytes = OS_read(fd, buf, numbytes, 20);
 	printf("\n%s\n",buf);
-	free(buf);
         OS_close(fd);
 
 } 

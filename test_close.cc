@@ -13,28 +13,20 @@ int main() {
 
         printf("\n--------------TEST1 OPEN----------------\n");
         int fd = 0;
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
         fd = OS_open("/CONGRATSTXT");
-        print_dirEnt(&fdTable[fd]);
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
+        printf("FD: %d\n", fd);
 
         printf("\n--------------TEST1 CLOSE----------------\n");
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
         OS_close(fd);
-        print_dirEnt(&fdTable[fd]);
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
+        printf("FD Count: %d \n", fdCount);
 
         printf("\n--------------TEST2 OPEN----------------\n");
         fd = 0;
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
         fd = OS_open("/PEOPLE/AG8T/GATE-C~1TXT");
-        print_dirEnt(&fdTable[fd]);
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
+        printf("FD: %d\n", fd);
 
         printf("\n--------------TEST2 CLOSE----------------\n");
-        printf("BEFORE FD: %d count: %d\n", fd, fdCount);
         OS_close(fd);
-        print_dirEnt(&fdTable[fd]);
-        printf("AFTER FD: %d count: %d\n", fd, fdCount);
+        printf("FD Count: %d \n", fdCount);
 
 } 

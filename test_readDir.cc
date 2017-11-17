@@ -7,7 +7,7 @@
 #include <inttypes.h>
 #include <fcntl.h>
 
-//#include "myFat32.cc"
+#include "myFat32.cc"
 
 int main() {
 
@@ -20,20 +20,22 @@ int main() {
                         print_dirEnt(&dirs[i]);
                 }
         } else
-                printf("NULL\n");
+        	printf("NULL\n");
 
         printf("\n--------------TEST2 READDIR----------------\n");
         dirs = OS_readDir("/PEOPLE");
-        if(dirs != NULL) {
-                for(int i=0; i<100; i++) {
+	int i;
+	if(dirs != NULL) {
+                for(i=0; i<100; i++) {
                         if(dirs[i].dir_attr == 0)
                                 break;
                         print_dirEnt(&dirs[i]);
                 }
         } else
                 printf("NULL\n");
+	printf("TOTAL: %d\n", i);
 
-        printf("\n--------------TEST3 READDIR----------------\n");
+        /*printf("\n--------------TEST3 READDIR----------------\n");
         dirs = OS_readDir("/PEOPLE/AG8T/");
         if(dirs != NULL) {
                 for(int i=0; i<100; i++) {
@@ -43,8 +45,7 @@ int main() {
                 }
         } else
                 printf("NULL\n");
+	*/
 
-        print_fat32(&bpbcomm);
-        print_dirEnt(&rootDir);
-
+	free(dirs);
 } 

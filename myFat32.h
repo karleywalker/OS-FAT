@@ -16,6 +16,8 @@
 #include <inttypes.h>
 #include <fcntl.h>
 
+#include "myFat32.cc"
+
 using namespace std;
 
 typedef struct __attribute__ ((packed)) {
@@ -95,18 +97,17 @@ int print_dirEnt(dirEnt *dirInfo);
 
 //Helper functions
 void safe_read(int descriptor, uint8_t *buffer, size_t size, long long offset);
-void tokenize(char *string, char *path[], int *depth);
+void tokenize_path(char *string, char *path[], int *depth);
 static void *realloc_or_free(void *ptr, size_t size);
 
 //FAT related helper functions
 int initFAT();
 int initializeMBR(bpbFat32 *bpbcomm, int inFile);
-dirEnt initializeRootDir(bpbFat32 *bpbcomm, int inFile);
-int getFirstDataSec(bpbFat32 *bpbfat32, int N);
-int getDirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile);
-dirEnt * getDirEs(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count);
+dirEnt initialize_rootDir(bpbFat32 *bpbcomm, int inFile);
+int get_firstDataSec(bpbFat32 *bpbfat32, int N);
+dirEnt * get_dirEnts(dirEnt dirInfo, bpbFat32 *bpbcomm, int inFile, int cluster, int *count);
 void lookUp(const char *dirpath, int opType, int *status, dirEnt **dirs);
-int getFileDesc(dirEnt *fileEnt);
+int get_fileDesc(dirEnt *fileEnt);
 
 
 //Library Functions to support FAT read-only

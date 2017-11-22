@@ -25,13 +25,29 @@ int main() {
 
         printf("\n--------------TEST3 CD----------------\n");
         printf("Before CD: %s\n", cwdPath);
-        status = OS_cd("/PEOPLE/AG8T/");
+        status = OS_cd("/PEOPLE");
         if(status != -1)
-                print_dirEnt(&cwd);
+                printDirEnt(&cwd);
         printf("Status: %d\n", status);
         printf("After CD: %s\n", cwdPath); 
 
         printf("\n--------------TEST4 CD----------------\n");
+        printf("Before CD: %s\n", cwdPath);
+        status = OS_cd("AG8T");
+        if(status != -1)
+                printDirEnt(&cwd);
+        printf("Status: %d\n", status);
+        printf("After CD: %s\n", cwdPath); 
+
+        printf("\n--------------TEST5 CD----------------\n");
+        printf("Before CD: %s\n", cwdPath);
+        status = OS_cd("../YYZ5W");
+        if(status != -1)
+                printDirEnt(&cwd);
+        printf("Status: %d\n", status);
+        printf("After CD: %s\n", cwdPath); 
+
+        printf("\n--------------TEST6 CD----------------\n");
         printf("Before CD: %s\n", cwdPath);
         status = OS_cd("/PEOPLE/AG8T/GATE-C~1TXT");
         printf("Status: %d\n", status);

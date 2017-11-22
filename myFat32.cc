@@ -300,7 +300,7 @@ int getFileDesc(dirEnt *fileEnt){
 
 
 // change directory from current to new directory
-int OS_cd(const char *dirpath){
+int OS_cd(const char *dirpath) {
 
         char *path_tokens[1000];
         int depth = 0;

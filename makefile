@@ -19,11 +19,3 @@ test:
 	$(CC) -std=c++11 test_cd.cc -o testCd $(TARGET)
 	$(CC) -std=c++11 test_close.cc -o testClose $(TARGET)
 	$(CC) -std=c++11 test_read.cc -o testFileRead $(TARGET)
-
-extra:
-	$(CC) -std=c++11 test_open.cc -o testOpen $(TARGET)
-	$(CC) -std=c++11 test_readDir.cc -o testDirRead $(TARGET)
-	$(CC) -std=c++11 test_cd.cc -o testCd $(TARGET)
-	$(CC) -std=c++11 test_close.cc -o testClose $(TARGET)
-	$(CC) -std=c++11 test_read.cc -o testFileRead $(TARGET)
-	$(CC) -std=c++11 tok.cc -o tok $(TARGET)

@@ -11,7 +11,7 @@
 
 int main() {
 
-        int fd = 0;
+        int fd = -1;
 
         printf("\n--------------TEST1 READFILE----------------\n");
         fd = OS_open("/CONGRATSTXT");
@@ -29,5 +29,10 @@ int main() {
         bytes = OS_read(fd, buf, numbytes, 20);
 	printf("\n%s\n",buf);
         OS_close(fd);
+
+        printf("\n--------------TEST3 READFILE----------------\n");
+        bytes = OS_read(-1, buf, numbytes, 20);
+        printf("\n--------------TEST3 READFILE----------------\n");
+        bytes = OS_read(100, buf, numbytes, 20);
 
 } 

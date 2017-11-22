@@ -12,7 +12,7 @@
 int main() {
 
         printf("\n--------------TEST1 OPEN----------------\n");
-        int fd = 0;
+        int fd = -1;
         fd = OS_open("/CONGRATSTXT");
         printf("FD: %d\n", fd);
 
@@ -21,12 +21,23 @@ int main() {
         printf("FD Count: %d \n", fdCount);
 
         printf("\n--------------TEST2 OPEN----------------\n");
-        fd = 0;
-        fd = OS_open("/PEOPLE/AG8T/GATE-C~1TXT");
+        fd = OS_cd("/PEOPLE/AG8T");
+        fd = -1;
+        fd = OS_open("GATE-C~1TXT");
+        printf("FD: %d\n", fd);
+
+        printf("\n--------------TEST3 OPEN----------------\n");
+        fd = OS_cd("../../");
+        fd = -1;
+        fd = OS_open("CONGRATSTXT");
         printf("FD: %d\n", fd);
 
         printf("\n--------------TEST2 CLOSE----------------\n");
         OS_close(fd);
         printf("FD Count: %d \n", fdCount);
 
+
+        printf("\n--------------TEST3 CLOSE----------------\n");
+        OS_close(100);
+        printf("FD Count: %d \n", fdCount);
 } 

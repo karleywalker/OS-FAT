@@ -148,7 +148,6 @@ char * tokenize(char *string, char *path[], int *depth) {
                 fullpath[0] = '\0';
                 strcat(fullpath,string);
         }
-        //printf("REL PATH = %s\n", fullpath);
 
         token = strtok(fullpath, "/");
         path[0] = token;
@@ -176,15 +175,10 @@ char * tokenize(char *string, char *path[], int *depth) {
                         strcat(relpath, path[i]);
                         strcat(relpath,"/");
                 }
-                //printf("REL FULL PATH = %s\n", relpath);
         } else {
                 relpath = string;
-                //printf("FULL PATH = %s\n", relpath);
         }
         return relpath;
-
-
-
 }
 
 // general read function to seek to a offset and read data into buffer
@@ -285,7 +279,6 @@ int getFileDesc(dirEnt *fileEnt){
                 if(strcmp((char *)fdTable[i].dir_name, (char *)fileEnt->dir_name) == 0)
                         return i;
         }
-        //printf("Incrementing fd from %d to %d\n", fdCount, fdCount+1);
         for(int i=0; i<MAX_OPEN; i++) {
                 if( fdTable[i].dir_attr == 0 && fdCount != MAX_OPEN) {
                         fdCount = fdCount + 1;
@@ -335,7 +328,6 @@ int OS_cd(const char *dirpath) {
         }
 
         for(int i=0; i<depth; i++) {
-                //printf("Lookup Dir: %s\n", path_tokens[i]);
                 int count = 0;
                 found = false;
 
@@ -345,17 +337,14 @@ int OS_cd(const char *dirpath) {
                         count = count+1;
 
                 for(int j=0; j<count; j++) {
-                        //printf("Comparing %s and %s i=%d j=%d\n", path_tokens[i], (char *)dirs[j].dir_name, i, j);
                         if(strncmp(path_tokens[i], (char *)dirs[j].dir_name, strlen(path_tokens[i])) == 0){
 
-                                //printf("Looking for %s in %s \n", path_tokens[i], dirs[j].dir_name);
                                 lookupDir = dirs[j];
                                 cluster = dirs[j].dir_fstClusLO;
                                 if((i==depth-1) && dirs[j].dir_attr != 0x10) { //reached end, no directory found
                                         free(dirs);
                                         return FAILURE;
                                 } else {
-                                        //printf("CD %s\n", path_tokens[i]);
                                         cwd = lookupDir;
                                         found = true;
                                         break;
@@ -409,9 +398,7 @@ dirEnt * OS_readDir(const char *dirpath) {
         cluster = bpbcomm.bpb_RootClus;
 
         strcpy(path, dirpath);
-        //printf("OLD PATH = %s\n", path);
         char *retpath = tokenize(path, path_tokens, &depth);
-        //printf("NEW PATH = %s\n", path);
 
         int k;
         if(strcmp(retpath, "/") == 0) {
@@ -429,7 +416,6 @@ dirEnt * OS_readDir(const char *dirpath) {
         }
 
         for(int i=0; i<depth; i++) {
-                //printf("Lookup Dir: %s\n", path_tokens[i]);
                 int count = 0;
                 found = false;
 
@@ -439,14 +425,11 @@ dirEnt * OS_readDir(const char *dirpath) {
                         count = count+1;
 
                 for(int j=0; j<count; j++) {
-                        //printf("Looking for %s %d in %s \n", path_tokens[i], (int)strlen(path_tokens[i]), dirs[j].dir_name);
                         if(strncmp(path_tokens[i], (char *)dirs[j].dir_name, strlen(path_tokens[i])) == 0){
 
-                                //printf("Looking for %s in %s \n", path_tokens[i], dirs[j].dir_name);
                                 lookupDir = dirs[j];
                                 cluster = dirs[j].dir_fstClusLO;
 
-                                //printf("READDIR\n");
                                 if((i==depth-1) && dirs[j].dir_attr != 0x10) { //reached end, no directory found
                                         free(dirs);
                                         return NULL;
@@ -507,9 +490,7 @@ int OS_open(const char *dirpath) {
         cluster = bpbcomm.bpb_RootClus;
 
         strcpy(path, dirpath);
-        //printf("OLD PATH = %s\n", path);
         char *retpath = tokenize(path, path_tokens, &depth);
-        //printf("NEW PATH = %s\n", retpath);
 
         if(strcmp(retpath, "/") == 0) {
                 return FAILURE;
@@ -517,38 +498,26 @@ int OS_open(const char *dirpath) {
 
 
         for(int i=0; i<depth; i++) {
-                //printf("Lookup Dir: %s\n", path_tokens[i]);
                 int count = 0;
                 found = false;
 
                 dirs = getDirEs(lookupDir, &bpbcomm, inFile, cluster, &count);
 
-                //printf("After Dir\n");
-                //printDirEnt(&dirs[2]);
-
                 if(count == 0 && dirs!= NULL)
                         count = count+1;
 
-                //printf("DEPTH = %d COUNT = %d\n", depth, count);
                 for(int j=0; j<count; j++) {
-                        //printf("Looking for %s %d in %s count %d i=%d j=%d\n", path_tokens[i], (int)strlen(path_tokens[i]), dirs[j].dir_name, count, i, j);
                         if(strncmp(path_tokens[i], (char *)dirs[j].dir_name, strlen(path_tokens[i])) == 0){
 
-                                //printf("Looking for %s in %s \n", path_tokens[i], dirs[j].dir_name);
                                 lookupDir = dirs[j];
                                 cluster = dirs[j].dir_fstClusLO;
 
-                                //printf("OPEN\n");
-                                //printf("File found: %s %d\n", lookupDir.dir_name, fdCount);
                                 if((i==depth-1) && dirs[j].dir_attr != 0x20) { //reached end, no file found
-                                        //printf("Reached here\n");
                                         free(dirs);
                                         dirs = NULL;
                                         return FAILURE;
                                 } else if ((i==depth-1) && dirs[j].dir_attr == 0x20){
-                                        //printf("File found: %s %d\n", lookupDir.dir_name, fdCount);
                                         fd = getFileDesc(&lookupDir);
-                                        printf("GOT FD %d\n", fd);
                                         found = true;
                                         break;
                                 } else {
@@ -618,12 +587,10 @@ int OS_read(int fd, void *readbuf, int nbytes, int offset){
         if(fd > -1 && fd <= MAX_OPEN) {
                 dirEnt fileInfo = fdTable[fd];
                 if(fileInfo.dir_attr != 0x00) {
-                        //printDirEnt(&fileInfo);
                         int first_sec_of_cluster = getFirstDataSec(&bpbcomm, fileInfo.dir_fstClusLO);
 
                         uint8_t buf[nbytes];
                         safe_read(inFile, (uint8_t *)&buf, nbytes, first_sec_of_cluster*bpbcomm.bpb_bytesPerSec+offset);
-                        //printf("\n%s\n", buf);
                         strcpy((char *)readbuf, (char *)buf);
                         return nbytes;
                 } else {
@@ -688,5 +655,4 @@ int printDirEnt(dirEnt *dirInfo) {
         printf("dir_fileSize:\t\t%d\n",dirInfo->dir_fileSize); 
         cout<< "--------DIR_ENT--------" << endl;
 }
-
 
